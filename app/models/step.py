@@ -11,25 +11,66 @@ class Step(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     @classmethod
-    def create(cls, recipe_id, step_number, instruction):
-        step = cls(recipe_id=recipe_id, step_number=step_number, instruction=instruction)
-        db.session.add(step)
-        db.session.commit()
-        return step
+    def create(cls, data):
+        """
+        新增一筆步記錄
+        data: 包含 recipe_id, step_number, instruction 的字典
+        """
+        try:
+            step = cls(**data)
+            db.session.add(step)
+            db.session.commit()
+            return step
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Step.create] Error: {e}")
+            return None
 
     @classmethod
     def get_all(cls):
-        return cls.query.all()
+        """取得所有步驟記錄"""
+        try:
+            return cls.query.all()
+        except Exception as e:
+            print(f"[Step.get_all] Error: {e}")
+            return []
 
     @classmethod
-    def get_by_id(cls, step_id):
-        return cls.query.get(step_id)
+    def get_by_id(cls, record_id):
+        """取得單筆步驟記錄"""
+        try:
+            return cls.query.get(record_id)
+        except Exception as e:
+            print(f"[Step.get_by_id] Error: {e}")
+            return None
 
-    def update(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-        db.session.commit()
+    @classmethod
+    def update(cls, record_id, data):
+        """更新特定步驟記錄"""
+        try:
+            step = cls.query.get(record_id)
+            if step:
+                for key, value in data.items():
+                    setattr(step, key, value)
+                db.session.commit()
+                return step
+            return None
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Step.update] Error: {e}")
+            return None
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    @classmethod
+    def delete(cls, record_id):
+        """刪除特定步驟記錄"""
+        try:
+            step = cls.query.get(record_id)
+            if step:
+                db.session.delete(step)
+                db.session.commit()
+                return True
+            return False
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Step.delete] Error: {e}")
+            return False

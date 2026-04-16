@@ -19,28 +19,77 @@ class Recipe(db.Model):
     favorited_by = db.relationship('Favorite', backref='recipe', lazy=True, cascade="all, delete-orphan")
 
     @classmethod
-    def create(cls, title, description, category, user_id, image_url=None):
-        recipe = cls(title=title, description=description, category=category, user_id=user_id, image_url=image_url)
-        db.session.add(recipe)
-        db.session.commit()
-        return recipe
+    def create(cls, data):
+        """
+        新增一筆食譜記錄
+        data: 包含 title, description, category, user_id, image_url 的字典
+        """
+        try:
+            recipe = cls(**data)
+            db.session.add(recipe)
+            db.session.commit()
+            return recipe
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Recipe.create] Error: {e}")
+            return None
 
     @classmethod
     def get_all(cls):
-        return cls.query.all()
+        """
+        取得所有食譜記錄
+        """
+        try:
+            return cls.query.all()
+        except Exception as e:
+            print(f"[Recipe.get_all] Error: {e}")
+            return []
 
     @classmethod
-    def get_by_id(cls, recipe_id):
-        return cls.query.get(recipe_id)
+    def get_by_id(cls, record_id):
+        """
+        取得單筆食譜記錄
+        """
+        try:
+            return cls.query.get(record_id)
+        except Exception as e:
+            print(f"[Recipe.get_by_id] Error: {e}")
+            return None
 
-    def update(self, **kwargs):
-        for key, value in kwargs.items():
-            if key == 'updated_at':
-                continue
-            setattr(self, key, value)
-        self.updated_at = datetime.utcnow()
-        db.session.commit()
+    @classmethod
+    def update(cls, record_id, data):
+        """
+        更新特定食譜記錄
+        data: 需要更新的欄位與值 dict
+        """
+        try:
+            recipe = cls.query.get(record_id)
+            if recipe:
+                for key, value in data.items():
+                    if key != 'updated_at':
+                        setattr(recipe, key, value)
+                recipe.updated_at = datetime.utcnow()
+                db.session.commit()
+                return recipe
+            return None
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Recipe.update] Error: {e}")
+            return None
 
-    def delete(self):
-        db.session.delete(self)
-        db.session.commit()
+    @classmethod
+    def delete(cls, record_id):
+        """
+        刪除特定食譜記錄
+        """
+        try:
+            recipe = cls.query.get(record_id)
+            if recipe:
+                db.session.delete(recipe)
+                db.session.commit()
+                return True
+            return False
+        except Exception as e:
+            db.session.rollback()
+            print(f"[Recipe.delete] Error: {e}")
+            return False
