@@ -1,5 +1,50 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- 註冊與登入表單 -->
+<div class="row justify-content-center align-items-center" style="min-height: 60vh;">
+    <div class="col-md-6 col-lg-5">
+        <div class="card recipe-card p-4 p-sm-5 border-0 shadow-lg">
+            
+            <div class="text-center mb-4">
+                <i class="bi bi-box2-heart text-danger display-4 d-block mb-2"></i>
+                <h3 class="fw-bold m-0">
+                    {% if is_register %}免費註冊帳號{% else %}歡迎回來{% endif %}
+                </h3>
+                <p class="text-muted small mt-2">尋找你的下一道完美料理靈感</p>
+            </div>
+            
+            <form action="{{ url_for('auth.register' if is_register else 'auth.login') }}" method="POST">
+                
+                {% if is_register %}
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control bg-light" id="username" name="username" placeholder="暱稱" required>
+                    <label for="username" class="text-muted">使用者名稱</label>
+                </div>
+                {% endif %}
+
+                <div class="form-floating mb-3">
+                    <input type="email" class="form-control bg-light" id="email" name="email" placeholder="name@example.com" required>
+                    <label for="email" class="text-muted">電子信箱</label>
+                </div>
+
+                <div class="form-floating mb-4">
+                    <input type="password" class="form-control bg-light" id="password" name="password" placeholder="密碼" required>
+                    <label for="password" class="text-muted">密碼</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary-gradient w-100 py-3 mb-4 rounded-pill fs-5">
+                    {% if is_register %}建立帳號{% else %}登入回到廚房{% endif %}
+                </button>
+                
+                <div class="text-center fw-medium pb-2">
+                    {% if is_register %}
+                        已經有帳號了嗎？ <a href="{{ url_for('auth.login') }}" class="text-danger text-decoration-none">立即登入</a>
+                    {% else %}
+                        還沒有帳號？ <a href="{{ url_for('auth.register') }}" class="text-danger text-decoration-none">註冊帳號</a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

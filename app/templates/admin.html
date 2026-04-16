@@ -1,5 +1,128 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- 管理員專區與總數據 -->
+<div class="d-flex align-items-center mb-5 pb-3 py-3 border-bottom border-2 border-danger">
+    <div class="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center me-3 shadow" style="width: 60px; height: 60px;">
+        <i class="bi bi-shield-lock-fill fs-2"></i>
+    </div>
+    <div>
+        <h1 class="fw-bold m-0 text-dark">系統管理儀表板</h1>
+        <p class="text-muted m-0 mt-1">最高授權區域，請謹慎操作</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <div class="card recipe-card h-100 bg-white border-0 shadow-sm text-center py-5 d-flex flex-column justify-content-center position-relative overflow-hidden">
+            <div class="position-absolute text-primary opacity-10" style="right: -20px; top: -10px;"><i class="bi bi-people-fill" style="font-size: 8rem;"></i></div>
+            <h5 class="fw-bold text-muted mb-3 z-1">全站註冊會員總數</h5>
+            <h1 class="display-2 fw-bold text-primary m-0 z-1">{{ users|length }}</h1>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card recipe-card h-100 bg-white border-0 shadow-sm text-center py-5 d-flex flex-column justify-content-center position-relative overflow-hidden">
+            <div class="position-absolute text-success opacity-10" style="right: -20px; top: -10px;"><i class="bi bi-book-half" style="font-size: 8rem;"></i></div>
+            <h5 class="fw-bold text-muted mb-3 z-1">全站收錄食譜總數</h5>
+            <h1 class="display-2 fw-bold text-success m-0 z-1">{{ recipes|length }}</h1>
+        </div>
+    </div>
+</div>
+
+<div class="card recipe-card border-0 shadow-sm p-4">
+    <ul class="nav nav-pills mb-4 gap-2" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active bg-light text-dark fw-bold rounded-pill px-4" id="manage-recipes-tab" data-bs-toggle="pill" data-bs-target="#manage-recipes" type="button" role="tab" style="border: 1px solid #dee2e6;">管理食譜</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link bg-light text-dark fw-bold rounded-pill px-4" id="manage-users-tab" data-bs-toggle="pill" data-bs-target="#manage-users" type="button" role="tab" style="border: 1px solid #dee2e6;">管理帳號</button>
+        </li>
+    </ul>
+
+    <!-- 調整當前 pill 在 active 狀態時的樣式 -->
+    <style>
+        .nav-pills .nav-link.active {
+            background: linear-gradient(135deg, #343a40, #212529) !important;
+            color: #fff !important;
+            border-color: #212529 !important;
+        }
+    </style>
+
+    <div class="tab-content" id="adminTabsContent">
+        <!-- 管理食譜 -->
+        <div class="tab-pane fade show active" id="manage-recipes" role="tabpanel">
+            <div class="table-responsive rounded-3 border">
+                <table class="table table-hover align-middle mb-0 bg-white">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>標題</th>
+                            <th>發布者</th>
+                            <th>建立時間</th>
+                            <th class="pe-4 text-end">執法操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipe in recipes %}
+                        <tr>
+                            <td class="ps-4 text-muted">#{{ recipe.id }}</td>
+                            <td class="fw-bold"><a href="{{ url_for('recipe.view_recipe', recipe_id=recipe.id) }}" target="_blank" class="text-decoration-none text-dark">{{ recipe.title }} <i class="bi bi-box-arrow-up-right ms-1 small text-muted"></i></a></td>
+                            <td><span class="badge bg-secondary text-light fw-normal">{{ recipe.author.username }}</span></td>
+                            <td class="text-muted">{{ recipe.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="pe-4 text-end">
+                                <form action="{{ url_for('admin.admin_delete_recipe', recipe_id=recipe.id) }}" method="POST" class="d-inline" onsubmit="return confirm('警告：確定強制刪除該食譜？系統將無法復原。')">
+                                    <button class="btn btn-sm btn-outline-danger fw-bold shadow-sm rounded-pill px-3"><i class="bi bi-trash-fill"></i> 強制下架</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 管理使用者 -->
+        <div class="tab-pane fade" id="manage-users" role="tabpanel">
+            <div class="table-responsive rounded-3 border">
+                <table class="table table-hover align-middle mb-0 bg-white">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">ID</th>
+                            <th>會員名稱</th>
+                            <th>電子信箱</th>
+                            <th>身份級別</th>
+                            <th>註冊時間</th>
+                            <th class="pe-4 text-end">帳號處置</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td class="ps-4 text-muted">#{{ u.id }}</td>
+                            <td class="fw-bold">{{ u.username }}</td>
+                            <td><a href="mailto:{{ u.email }}" class="text-secondary">{{ u.email }}</a></td>
+                            <td>
+                                {% if u.is_admin %}
+                                <span class="badge bg-danger rounded-pill px-3 shadow-sm"><i class="bi bi-star-fill"></i> Admin</span>
+                                {% else %}
+                                <span class="badge bg-light text-dark border">一般會員</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td class="pe-4 text-end">
+                                {% if not u.is_admin %}
+                                <form action="{{ url_for('admin.ban_user', user_id=u.id) }}" method="POST" class="d-inline" onsubmit="return confirm('警告：確定永久停權並刪除該會員？此動作將一併刪除其所有公開內容！')">
+                                    <button class="btn btn-sm btn-danger fw-bold shadow-sm rounded-pill px-3"><i class="bi bi-slash-circle"></i> 停權刪除</button>
+                                </form>
+                                {% else %}
+                                <span class="text-muted small">系統保護</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

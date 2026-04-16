@@ -1,5 +1,119 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- 新增 / 編輯 食譜表單 (含動態添加材料與步驟欄位) -->
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="card recipe-card p-4 p-md-5 border-0 shadow-lg">
+            <h2 class="fw-bold mb-4 text-center">
+                {% if recipe %}<i class="bi bi-pencil-square text-danger me-2"></i>編輯食譜內容{% else %}<i class="bi bi-magic text-danger me-2"></i>分享新食譜{% endif %}
+            </h2>
+
+            <form action="{{ url_for('recipe.edit_recipe', recipe_id=recipe.id) if recipe else url_for('recipe.new_recipe') }}" method="POST">
+                
+                <div class="form-floating mb-4">
+                    <input type="text" class="form-control bg-light fw-bold fs-5" id="title" name="title" value="{{ recipe.title if recipe else '' }}" required placeholder="食譜名稱">
+                    <label for="title" class="text-muted">想個吸引人的食譜標題大名 (必填) ✍️</label>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <select class="form-select bg-light" id="category" name="category" required>
+                                <option value="" disabled {% if not recipe %}selected{% endif %}>請選擇料理領域...</option>
+                                <option value="中式料理" {% if recipe and recipe.category == '中式料理' %}selected{% endif %}>中式料理</option>
+                                <option value="西式料理" {% if recipe and recipe.category == '西式料理' %}selected{% endif %}>西式料理</option>
+                                <option value="異國料理" {% if recipe and recipe.category == '異國料理' %}selected{% endif %}>異國料理</option>
+                                <option value="甜點烘焙" {% if recipe and recipe.category == '甜點烘焙' %}selected{% endif %}>甜點烘焙</option>
+                                <option value="快速家常菜" {% if recipe and recipe.category == '快速家常菜' %}selected{% endif %}>快速家常菜</option>
+                                <option value="其他" {% if recipe and recipe.category == '其他' %}selected{% endif %}>其他</option>
+                            </select>
+                            <label for="category" class="text-muted">分類 (必填)</label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-floating">
+                            <input type="url" class="form-control bg-light" id="image_url" name="image_url" value="{{ recipe.image_url if recipe else '' }}" placeholder="https://...">
+                            <label for="image_url" class="text-muted">封面圖片網址 (選填)</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold ms-1 text-secondary">幾句話介紹這道料理 (必填)</label>
+                    <textarea class="form-control bg-light shadow-sm" name="description" rows="3" required placeholder="分享一下這道菜的口感、背後的故事，或推薦搭配的吃法吧！">{{ recipe.description if recipe else '' }}</textarea>
+                </div>
+
+                <!-- MVP 簡易版：僅在新建食譜時讓使用者能填寫動態清單 -->
+                {% if not recipe %}
+                <div class="p-4 bg-light rounded-4 mb-4 border shadow-sm mt-5">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold m-0"><i class="bi bi-basket text-success me-2"></i>所需材料</h4>
+                        <button type="button" class="btn btn-sm btn-success rounded-pill fw-bold shadow-sm px-3" id="add-ingredient"><i class="bi bi-plus-lg"></i> 加一項</button>
+                    </div>
+                    <div id="ingredient-container">
+                        <!-- 第一列預設材料 -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-7"><input type="text" class="form-control" name="ingredient_name[]" placeholder="材料名稱 (如: 牛肉)"></div>
+                            <div class="col-5"><input type="text" class="form-control" name="ingredient_amount[]" placeholder="份量 (如: 300g)"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 bg-light rounded-4 mb-4 border shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="fw-bold m-0"><i class="bi bi-list-ol text-warning me-2"></i>烹飪步驟</h4>
+                        <button type="button" class="btn btn-sm btn-warning rounded-pill fw-bold shadow-sm px-3 text-dark" id="add-step"><i class="bi bi-plus-lg"></i> 加一步</button>
+                    </div>
+                    <div id="step-container">
+                        <!-- 第一列預設步驟 -->
+                        <div class="mb-3">
+                            <div class="input-group shadow-sm">
+                                <span class="input-group-text bg-white fw-bold text-muted border-end-0">1.</span>
+                                <textarea class="form-control border-start-0" name="step_instruction[]" rows="2" placeholder="詳細操作流程..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="text-end mt-5 pt-3 border-top">
+                    <a href="javascript:history.back()" class="btn btn-light px-4 me-3 rounded-pill fw-bold">取消</a>
+                    <button type="submit" class="btn btn-primary-gradient px-5 py-2 fs-5 rounded-pill shadow-sm"><i class="bi bi-send-fill me-2"></i>{% if recipe %}儲存變更{% else %}閃亮發布 🎉{% endif %}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% if not recipe %}
+<script>
+    let stepCount = 1;
+    document.getElementById('add-ingredient').addEventListener('click', function() {
+        const container = document.getElementById('ingredient-container');
+        const div = document.createElement('div');
+        div.className = 'row g-2 mb-3';
+        div.innerHTML = `
+            <div class="col-7"><input type="text" class="form-control" name="ingredient_name[]" placeholder="材料名稱"></div>
+            <div class="col-5"><input type="text" class="form-control" name="ingredient_amount[]" placeholder="份量"></div>
+        `;
+        container.appendChild(div);
+    });
+
+    document.getElementById('add-step').addEventListener('click', function() {
+        stepCount++;
+        const container = document.getElementById('step-container');
+        const div = document.createElement('div');
+        div.className = 'mb-3';
+        div.innerHTML = `
+            <div class="input-group shadow-sm">
+                <span class="input-group-text bg-white fw-bold text-muted border-end-0">${stepCount}.</span>
+                <textarea class="form-control border-start-0" name="step_instruction[]" rows="2" placeholder="詳細操作流程..."></textarea>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+</script>
+{% endif %}
 {% endblock %}

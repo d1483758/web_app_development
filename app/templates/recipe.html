@@ -1,5 +1,119 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- 單篇食譜的圖片、介紹、材料清單與步驟流程 -->
+<div class="row g-4">
+    <!-- 左側：圖片與基本資訊 -->
+    <div class="col-lg-5 mb-4 mb-lg-0">
+        <div class="card recipe-card border-0 shadow-sm mb-4">
+            {% if recipe.image_url %}
+                <img src="{{ recipe.image_url }}" class="img-fluid" alt="{{ recipe.title }}" style="width: 100%; height: 350px; object-fit: cover; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+            {% else %}
+                <div class="bg-light d-flex align-items-center justify-content-center text-muted" style="height: 350px; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <div class="text-center">
+                        <i class="bi bi-camera fs-1"></i>
+                        <p class="mt-2 text-secondary">無提供圖片</p>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="card-body p-4 p-md-5">
+                <span class="badge bg-secondary mb-3 fs-6 fw-normal px-3 py-2 rounded-pill">{{ recipe.category }}</span>
+                <h1 class="fw-bold mb-4 display-6 text-dark">{{ recipe.title }}</h1>
+                <p class="text-secondary fs-5 lh-lg fst-italic mb-5" style="border-left: 4px solid #ff6b6b; padding-left: 15px;">"{{ recipe.description }}"</p>
+                
+                <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded-3">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-white rounded-circle d-flex align-items-center justify-content-center text-danger fw-bold me-3 shadow-sm" style="width: 45px; height: 45px;">
+                            {{ recipe.author.username[0] | upper }}
+                        </div>
+                        <div>
+                            <small class="text-muted d-block lh-1">食譜作者</small>
+                            <span class="fw-bold text-dark">{{ recipe.author.username }}</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted d-block lh-1">發布日期</small>
+                        <span class="fw-bold text-dark">{{ recipe.created_at.strftime('%Y-%m-%d') }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 收藏/編輯 操作按鈕 -->
+        <div class="d-grid gap-2 sticky-lg-top" style="top: 100px;">
+            {% if session.get('user_id') %}
+                <form action="{{ url_for('recipe.toggle_favorite', recipe_id=recipe.id) }}" method="POST">
+                    {# Jinja2 Trick to check relations #}
+                    {% set ns = namespace(favorited=false) %}
+                    {% for fav in recipe.favorited_by %}
+                        {% if fav.user_id == session.get('user_id') %}
+                            {% set ns.favorited = true %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if ns.favorited %}
+                        <button type="submit" class="btn btn-outline-danger w-100 py-3 fw-bold fs-5 shadow-sm rounded-pill"><i class="bi bi-heart-fill me-2"></i>取消收藏</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-primary-gradient w-100 py-3 fw-bold fs-5 shadow-sm rounded-pill"><i class="bi bi-heart me-2"></i>加入最愛收藏</button>
+                    {% endif %}
+                </form>
+                
+                {% if recipe.user_id == session.get('user_id') %}
+                    <a href="{{ url_for('recipe.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-light w-100 py-3 fw-bold text-secondary shadow-sm rounded-pill mt-2 hover-shadow border"><i class="bi bi-pencil-square me-2"></i>修改食譜內容</a>
+                {% endif %}
+            {% else %}
+                <div class="card border-0 shadow-sm bg-light p-4 text-center">
+                    <p class="mb-3 text-muted">登入後即可將此食譜加入個人收藏夾，隨時查閱！</p>
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-primary-gradient py-2 fw-bold rounded-pill mx-4">登入 / 註冊</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 右側：材料與步驟清單 -->
+    <div class="col-lg-7">
+        <!-- Ingredients Section -->
+        <div class="card recipe-card mb-4 border-0 p-4 p-md-5 shadow-sm">
+            <h3 class="fw-bold mb-4 d-flex align-items-center"><i class="bi bi-basket2 text-danger me-3 fs-2"></i>準備材料</h3>
+            
+            <div class="bg-light rounded p-4">
+                <ul class="list-group list-group-flush form-check-list bg-transparent">
+                    {% if recipe.ingredients %}
+                        {% for ing in recipe.ingredients %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent border-bottom border-white py-3 px-1">
+                            <div class="form-check m-0">
+                                <input class="form-check-input fs-5" type="checkbox" id="ing{{ ing.id }}">
+                                <label class="form-check-label fs-5 ms-2 text-dark user-select-none" for="ing{{ ing.id }}">{{ ing.name }}</label>
+                            </div>
+                            <span class="badge bg-white text-dark border shadow-sm fs-6 px-3 py-2 rounded-pill">{{ ing.amount }}</span>
+                        </li>
+                        {% endfor %}
+                    {% else %}
+                        <li class="list-group-item text-muted bg-transparent border-0 text-center py-4">作者未提供單獨的材料清單</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <!-- Steps Section -->
+        <div class="card recipe-card border-0 p-4 p-md-5 shadow-sm">
+            <h3 class="fw-bold mb-5 d-flex align-items-center"><i class="bi bi-list-stars text-danger me-3 fs-2"></i>烹飪步驟</h3>
+            
+            <div class="steps-timeline position-relative ps-4" style="border-left: 3px dashed #ffb6b9; margin-left: 20px;">
+                {% if recipe.steps %}
+                    {% for step in recipe.steps|sort(attribute='step_number') %}
+                    <div class="mb-5 position-relative">
+                        <span class="position-absolute text-white rounded-circle d-flex justify-content-center align-items-center fw-bold shadow-sm" style="width: 44px; height: 44px; left: -46px; top: -5px; background: linear-gradient(135deg, #ff6b6b, #d83d73); font-size: 1.2rem;">{{ step.step_number }}</span>
+                        <div class="bg-light p-4 rounded-3 shadow-sm">
+                            <p class="fs-5 mb-0 text-dark lh-base">{{ step.instruction }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted text-center pt-3">作者未詳細提供分步流程。</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

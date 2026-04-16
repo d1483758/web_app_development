@@ -1,5 +1,93 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <!-- 個人主頁：發布的食譜與收藏名單 -->
+<div class="row mb-5">
+    <div class="col-12">
+        <div class="card recipe-card border-0 p-4 p-md-5 d-flex flex-row align-items-center" style="background: linear-gradient(135deg, white 60%, #fff0f5); border-left: 5px solid #ff6b6b !important;">
+            <div class="bg-primary-gradient rounded-circle d-flex align-items-center justify-content-center text-white fw-bold display-4 shadow-sm me-4" style="width: 100px; height: 100px; background: linear-gradient(135deg, #ff6b6b, #d83d73);">
+                {{ user.username[0] | upper }}
+            </div>
+            <div>
+                <h1 class="fw-bold mb-1">{{ user.username }}</h1>
+                <p class="text-muted fs-5 mb-0"><i class="bi bi-envelope"></i> {{ user.email }}</p>
+                {% if user.is_admin %}
+                <span class="badge bg-danger mt-2 px-3 py-2 rounded-pill"><i class="bi bi-shield-check"></i> 管理員</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs fw-bold mb-4" id="profileTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active text-dark px-4" id="my-recipes-tab" data-bs-toggle="tab" data-bs-target="#my-recipes" type="button" role="tab">我發布的食譜</button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link text-dark px-4" id="favorites-tab" data-bs-toggle="tab" data-bs-target="#favorites" type="button" role="tab"><i class="bi bi-heart-fill text-danger"></i> 我的收藏夾</button>
+    </li>
+</ul>
+
+<div class="tab-content" id="profileTabsContent">
+    <!-- 我發布的食譜 -->
+    <div class="tab-pane fade show active" id="my-recipes" role="tabpanel">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% if user.recipes %}
+                {% for recipe in user.recipes %}
+                <div class="col">
+                    <div class="card recipe-card h-100 position-relative border-0 shadow-sm">
+                        <div class="card-body">
+                            <span class="badge bg-secondary mb-2">{{ recipe.category }}</span>
+                            <h5 class="card-title fw-bold"><a href="{{ url_for('recipe.view_recipe', recipe_id=recipe.id) }}" class="text-dark text-decoration-none stretched-link">{{ recipe.title }}</a></h5>
+                            <p class="text-muted small mb-0"><i class="bi bi-clock"></i> {{ recipe.created_at.strftime('%Y-%m-%d') }}</p>
+                        </div>
+                        <div class="card-footer bg-light border-0 d-flex justify-content-between p-3 z-3 position-relative">
+                            <a href="{{ url_for('recipe.edit_recipe', recipe_id=recipe.id) }}" class="btn btn-outline-secondary btn-sm px-3 fw-medium"><i class="bi bi-pencil"></i> 編輯</a>
+                            <form action="{{ url_for('recipe.delete_recipe', recipe_id=recipe.id) }}" method="POST" onsubmit="return confirm('確定要永久刪除這份心血食譜嗎？');">
+                                <button type="submit" class="btn btn-outline-danger btn-sm px-3 fw-medium"><i class="bi bi-trash"></i> 刪除</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5">
+                    <div class="bg-white p-5 rounded shadow-sm text-muted">
+                        <i class="bi bi-journal-plus fs-1 d-block mb-3"></i>
+                        <p class="fs-5">您尚未發布任何專屬於您的食譜。</p>
+                        <a href="{{ url_for('recipe.new_recipe') }}" class="btn btn-primary-gradient px-4 py-2 mt-2 shadow-sm">立即分享料理寫作</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 我的收藏夾 -->
+    <div class="tab-pane fade" id="favorites" role="tabpanel">
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            {% if user.favorites %}
+                {% for fav in user.favorites %}
+                <div class="col">
+                    <div class="card recipe-card border-0 h-100 shadow-sm">
+                        {% if fav.recipe.image_url %}
+                        <img src="{{ fav.recipe.image_url }}" class="card-img-top" style="height:150px; object-fit:cover;" alt="封面">
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title fw-bold"><a href="{{ url_for('recipe.view_recipe', recipe_id=fav.recipe.id) }}" class="text-dark text-decoration-none stretched-link">{{ fav.recipe.title }}</a></h5>
+                            <p class="text-muted small mt-2 mb-0 border-top pt-2"><i class="bi bi-person-fill"></i> 作者：{{ fav.recipe.author.username }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12 text-center py-5">
+                    <div class="bg-white p-5 rounded shadow-sm text-muted">
+                        <i class="bi bi-heartbreak fs-1 d-block mb-3 text-secondary"></i>
+                        <p class="fs-5">您的收藏夾還空空如也呢！</p>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary px-4 py-2 mt-2">去首頁尋找料理靈感</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
 {% endblock %}
